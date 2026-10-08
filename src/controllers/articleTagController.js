@@ -1,6 +1,7 @@
 import { Article, ArticleTag } from '../models/index.js';
+import { controllerHandler } from '../helpers/controllerHandler.js';
 
-export const addTagToArticle = async (req, res) => {
+export const addTagToArticle = controllerHandler(async (req, res) => {
   const existingAssociation = await ArticleTag.findOne({
     where: {
       article_id: req.body.article_id,
@@ -21,9 +22,9 @@ export const addTagToArticle = async (req, res) => {
     message: 'Etiqueta asociada correctamente',
     association,
   });
-};
+});
 
-export const removeTagFromArticle = async (req, res) => {
+export const removeTagFromArticle = controllerHandler(async (req, res) => {
   const association = await ArticleTag.findByPk(req.params.articleTagId);
 
   if (!association) {
@@ -42,4 +43,4 @@ export const removeTagFromArticle = async (req, res) => {
 
   await association.destroy();
   return res.status(200).json({ message: 'Etiqueta removida correctamente' });
-};
+});

@@ -6,9 +6,10 @@ import {
   hashPassword,
   setAuthCookie,
 } from '../helpers/auth.js';
+import { controllerHandler } from '../helpers/controllerHandler.js';
 import { serializeUser } from '../helpers/serializers.js';
 
-export const register = async (req, res) => {
+export const register = controllerHandler(async (req, res) => {
   const { username, email, password, first_name, last_name } = req.body;
   const passwordHash = await hashPassword(password);
 
@@ -37,9 +38,9 @@ export const register = async (req, res) => {
     message: 'Usuario registrado correctamente',
     user: serializeUser(user),
   });
-};
+});
 
-export const login = async (req, res) => {
+export const login = controllerHandler(async (req, res) => {
   const user = await User.unscoped().findOne({
     where: { email: req.body.email },
     attributes: ['id', 'username', 'email', 'password', 'role'],
@@ -54,9 +55,9 @@ export const login = async (req, res) => {
     message: 'Inicio de sesión exitoso',
     user: serializeUser(user),
   });
-};
+});
 
-export const getProfile = async (req, res) => {
+export const getProfile = controllerHandler(async (req, res) => {
   const profile = await Profile.findOne({ where: { user_id: req.user.id } });
 
   if (!profile) {
@@ -67,9 +68,9 @@ export const getProfile = async (req, res) => {
     user: serializeUser(req.user),
     profile,
   });
-};
+});
 
-export const updateProfile = async (req, res) => {
+export const updateProfile = controllerHandler(async (req, res) => {
   const profile = await Profile.findOne({ where: { user_id: req.user.id } });
 
   if (!profile) {
@@ -87,9 +88,9 @@ export const updateProfile = async (req, res) => {
 
   await profile.update(updates);
   return res.status(200).json({ message: 'Perfil actualizado correctamente', profile });
-};
+});
 
-export const logout = (req, res) => {
+export const logout = controllerHandler((req, res) => {
   clearAuthCookie(res);
   return res.status(200).json({ message: 'Sesión cerrada correctamente' });
-};
+});

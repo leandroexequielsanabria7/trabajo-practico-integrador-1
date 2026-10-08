@@ -1,5 +1,6 @@
 import { sequelize, Article, Profile, User } from '../models/index.js';
 import { hashPassword } from '../helpers/auth.js';
+import { controllerHandler } from '../helpers/controllerHandler.js';
 import { serializeUser } from '../helpers/serializers.js';
 
 const userIncludes = [
@@ -14,7 +15,7 @@ const userIncludes = [
 const profileFields = ['first_name', 'last_name', 'biography', 'avatar_url', 'birth_date'];
 const userFields = ['username', 'email', 'role'];
 
-export const listUsers = async (req, res) => {
+export const listUsers = controllerHandler(async (req, res) => {
   const users = await User.findAll({
     attributes: { exclude: ['password'] },
     include: userIncludes,
@@ -22,9 +23,9 @@ export const listUsers = async (req, res) => {
   });
 
   return res.status(200).json({ users });
-};
+});
 
-export const getUser = async (req, res) => {
+export const getUser = controllerHandler(async (req, res) => {
   const user = await User.findByPk(req.params.id, {
     attributes: { exclude: ['password'] },
     include: userIncludes,
@@ -35,9 +36,9 @@ export const getUser = async (req, res) => {
   }
 
   return res.status(200).json({ user });
-};
+});
 
-export const createUser = async (req, res) => {
+export const createUser = controllerHandler(async (req, res) => {
   const password = await hashPassword(req.body.password);
 
   const user = await sequelize.transaction(async (transaction) => {
@@ -62,9 +63,9 @@ export const createUser = async (req, res) => {
     message: 'Usuario creado correctamente',
     user: serializeUser(user),
   });
-};
+});
 
-export const updateUser = async (req, res) => {
+export const updateUser = controllerHandler(async (req, res) => {
   const user = await User.findByPk(req.params.id);
 
   if (!user) {
@@ -106,9 +107,9 @@ export const updateUser = async (req, res) => {
     message: 'Usuario actualizado correctamente',
     user: updatedUser,
   });
-};
+});
 
-export const deleteUser = async (req, res) => {
+export const deleteUser = controllerHandler(async (req, res) => {
   const user = await User.findByPk(req.params.id);
 
   if (!user) {
@@ -117,4 +118,4 @@ export const deleteUser = async (req, res) => {
 
   await user.destroy();
   return res.status(200).json({ message: 'Usuario eliminado correctamente' });
-};
+});
