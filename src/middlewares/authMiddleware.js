@@ -1,6 +1,8 @@
-import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { Article, User } from '../models/index.js';
 import { verifyToken } from '../helpers/auth.js';
+
+const { JsonWebTokenError, TokenExpiredError } = jwt;
 
 export const authenticate = async (req, res, next) => {
   const token = req.cookies?.access_token;
