@@ -81,6 +81,9 @@ export const validateLogin = [
 ];
 
 export const validateProfile = [
+  body().custom((value) => Object.keys(value).length > 0
+    && Object.keys(value).every((field) => ['first_name', 'last_name', 'biography', 'avatar_url', 'birth_date'].includes(field)))
+    .withMessage('Debe enviar campos válidos del perfil'),
   body('first_name').optional().trim().isLength({ min: 2, max: 50 }).withMessage('Debe tener entre 2 y 50 caracteres')
     .matches(/^[\p{L}\s'-]+$/u).withMessage('Solo se permiten letras'),
   body('last_name').optional().trim().isLength({ min: 2, max: 50 }).withMessage('Debe tener entre 2 y 50 caracteres')
@@ -98,6 +101,12 @@ export const validateAdminUser = [
 ];
 
 export const validateUserUpdate = [
+  body().custom((value) => Object.keys(value).length > 0
+    && Object.keys(value).every((field) => [
+      'username', 'email', 'password', 'role', 'first_name', 'last_name',
+      'biography', 'avatar_url', 'birth_date',
+    ].includes(field)))
+    .withMessage('Debe enviar al menos un campo válido para actualizar'),
   body('username').optional().trim().isLength({ min: 3, max: 20 }).withMessage('Debe tener entre 3 y 20 caracteres')
     .matches(/^[a-zA-Z0-9]+$/).withMessage('Solo se permiten letras y números')
     .bail().custom(async (username, { req }) => {
@@ -121,7 +130,6 @@ export const validateUserUpdate = [
   body('biography').optional({ values: 'null' }).isLength({ max: 500 }).withMessage('Máximo 500 caracteres'),
   body('avatar_url').optional({ values: 'null' }).isURL().withMessage('Debe ser una URL válida'),
   body('birth_date').optional({ values: 'null' }).isISO8601().withMessage('Debe ser una fecha válida'),
-  body().custom((value) => Object.keys(value).length > 0).withMessage('Debe enviar al menos un campo'),
   rejectInvalid,
 ];
 
@@ -135,6 +143,8 @@ export const validateTag = [
 ];
 
 export const validateTagUpdate = [
+  body().custom((value) => Object.keys(value).length === 1 && Object.hasOwn(value, 'name'))
+    .withMessage('Solo se puede actualizar el nombre de la etiqueta'),
   body('name').trim().isLength({ min: 2, max: 30 }).withMessage('Debe tener entre 2 y 30 caracteres')
     .matches(/^\S+$/).withMessage('No se permiten espacios')
     .bail().custom(async (name, { req }) => {
@@ -145,6 +155,9 @@ export const validateTagUpdate = [
 ];
 
 export const validateArticle = [
+  body().custom((value) => Object.keys(value).every((field) => [
+    'title', 'content', 'excerpt', 'status', 'user_id',
+  ].includes(field))).withMessage('El artículo contiene campos no permitidos'),
   body('title').trim().isLength({ min: 3, max: 200 }).withMessage('Debe tener entre 3 y 200 caracteres'),
   body('content').isString().trim().isLength({ min: 50 }).withMessage('Debe tener al menos 50 caracteres'),
   body('excerpt').optional({ values: 'null' }).isLength({ max: 500 }).withMessage('Máximo 500 caracteres'),
@@ -155,12 +168,14 @@ export const validateArticle = [
 ];
 
 export const validateArticleUpdate = [
+  body().custom((value) => Object.keys(value).length > 0 && Object.keys(value).every((field) => [
+    'title', 'content', 'excerpt', 'status',
+  ].includes(field))).withMessage('Debe enviar campos válidos para el artículo'),
   body('title').optional().trim().isLength({ min: 3, max: 200 }).withMessage('Debe tener entre 3 y 200 caracteres'),
   body('content').optional().isString().trim().isLength({ min: 50 }).withMessage('Debe tener al menos 50 caracteres'),
   body('excerpt').optional({ values: 'null' }).isLength({ max: 500 }).withMessage('Máximo 500 caracteres'),
   body('status').optional().isIn(['published', 'archived']).withMessage('Estado no permitido'),
   body('user_id').not().exists().withMessage('No se puede cambiar el autor'),
-  body().custom((value) => Object.keys(value).length > 0).withMessage('Debe enviar al menos un campo'),
   rejectInvalid,
 ];
 
