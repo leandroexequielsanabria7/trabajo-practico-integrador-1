@@ -69,3 +69,18 @@ export const requireArticleOwnerOrAdmin = [loadArticle, (req, res, next) => {
 
   return next();
 }];
+
+export const requireArticleBodyOwner = async (req, res, next) => {
+  const article = await Article.findByPk(req.body.article_id);
+
+  if (!article) {
+    return res.status(404).json({ message: 'Artículo no encontrado' });
+  }
+
+  if (article.user_id !== req.user.id) {
+    return res.status(403).json({ message: 'Solo el autor puede modificar las etiquetas del artículo' });
+  }
+
+  req.article = article;
+  return next();
+};
