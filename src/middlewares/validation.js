@@ -64,6 +64,9 @@ const registrationRules = [
   body('last_name')
     .trim().isLength({ min: 2, max: 50 }).withMessage('Debe tener entre 2 y 50 caracteres')
     .matches(/^[\p{L}\s'-]+$/u).withMessage('Solo se permiten letras'),
+  body('biography').optional({ values: 'null' }).isLength({ max: 500 }).withMessage('Máximo 500 caracteres'),
+  body('avatar_url').optional({ values: 'null' }).isURL().withMessage('Debe ser una URL válida'),
+  body('birth_date').optional({ values: 'null' }).isISO8601().withMessage('Debe ser una fecha válida'),
 ];
 
 export const validateRegistration = [

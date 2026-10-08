@@ -29,4 +29,7 @@ export const User = sequelize.define('User', {
 }, {
   tableName: 'users',
   paranoid: true,
+  defaultScope: {
+    attributes: { exclude: ['password'] },
+  },
 });
