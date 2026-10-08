@@ -7,11 +7,22 @@ const rejectInvalid = (req, res, next) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({
       message: 'Error de validación',
-      errors: errors.array().map(({ path, msg }) => ({ field: path, message: msg })),
+      errors: errors.array().map(({ path, msg }) => ({ field: path || 'body', message: msg })),
     });
   }
 
   return next();
+};
+
+const hasOnlyFields = (value, allowed, minimum = 0, maximum = Infinity) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const fields = Object.keys(value);
+  return fields.length >= minimum
+    && fields.length <= maximum
+    && fields.every((field) => allowed.includes(field));
 };
 
 const ensureUserExists = (id) => User.findByPk(id).then((user) => {
@@ -65,47 +76,65 @@ const registrationRules = [
     .trim().isLength({ min: 2, max: 50 }).withMessage('Debe tener entre 2 y 50 caracteres')
     .matches(/^[\p{L}\s'-]+$/u).withMessage('Solo se permiten letras'),
   body('biography').optional({ values: 'null' }).isLength({ max: 500 }).withMessage('Máximo 500 caracteres'),
-  body('avatar_url').optional({ values: 'null' }).isURL().withMessage('Debe ser una URL válida'),
+  body('avatar_url').optional({ values: 'null' })
+    .isLength({ max: 255 }).withMessage('Máximo 255 caracteres')
+    .bail().isURL({ protocols: ['http', 'https'], require_protocol: true })
+    .withMessage('Debe ser una URL HTTP o HTTPS válida'),
   body('birth_date').optional({ values: 'null' }).isISO8601().withMessage('Debe ser una fecha válida'),
 ];
 
 export const validateRegistration = [
+  body().custom((value) => hasOnlyFields(value, [
+    'username', 'email', 'password', 'first_name', 'last_name',
+    'biography', 'avatar_url', 'birth_date',
+  ])).withMessage('La solicitud contiene campos no permitidos'),
   ...registrationRules,
   rejectInvalid,
 ];
 
 export const validateLogin = [
+  body().custom((value) => hasOnlyFields(value, ['email', 'password']))
+    .withMessage('La solicitud contiene campos no permitidos'),
   body('email').trim().isEmail().withMessage('Debe ser un email válido').normalizeEmail(),
   body('password').notEmpty().withMessage('La contraseña es obligatoria'),
   rejectInvalid,
 ];
 
 export const validateProfile = [
-  body().custom((value) => Object.keys(value).length > 0
-    && Object.keys(value).every((field) => ['first_name', 'last_name', 'biography', 'avatar_url', 'birth_date'].includes(field)))
+  body().custom((value) => hasOnlyFields(
+    value,
+    ['first_name', 'last_name', 'biography', 'avatar_url', 'birth_date'],
+    1
+  ))
     .withMessage('Debe enviar campos válidos del perfil'),
   body('first_name').optional().trim().isLength({ min: 2, max: 50 }).withMessage('Debe tener entre 2 y 50 caracteres')
     .matches(/^[\p{L}\s'-]+$/u).withMessage('Solo se permiten letras'),
   body('last_name').optional().trim().isLength({ min: 2, max: 50 }).withMessage('Debe tener entre 2 y 50 caracteres')
     .matches(/^[\p{L}\s'-]+$/u).withMessage('Solo se permiten letras'),
   body('biography').optional({ values: 'null' }).isLength({ max: 500 }).withMessage('Máximo 500 caracteres'),
-  body('avatar_url').optional({ values: 'null' }).isURL().withMessage('Debe ser una URL válida'),
+  body('avatar_url').optional({ values: 'null' })
+    .isLength({ max: 255 }).withMessage('Máximo 255 caracteres')
+    .bail().isURL({ protocols: ['http', 'https'], require_protocol: true })
+    .withMessage('Debe ser una URL HTTP o HTTPS válida'),
   body('birth_date').optional({ values: 'null' }).isISO8601().withMessage('Debe ser una fecha válida'),
   rejectInvalid,
 ];
 
 export const validateAdminUser = [
+  body().custom((value) => hasOnlyFields(value, [
+    'username', 'email', 'password', 'role', 'first_name', 'last_name',
+    'biography', 'avatar_url', 'birth_date',
+  ])).withMessage('La solicitud contiene campos no permitidos'),
   ...registrationRules,
   body('role').optional().isIn(['user', 'admin']).withMessage('Rol no permitido'),
   rejectInvalid,
 ];
 
 export const validateUserUpdate = [
-  body().custom((value) => Object.keys(value).length > 0
-    && Object.keys(value).every((field) => [
+  body().custom((value) => hasOnlyFields(value, [
       'username', 'email', 'password', 'role', 'first_name', 'last_name',
       'biography', 'avatar_url', 'birth_date',
-    ].includes(field)))
+    ], 1))
     .withMessage('Debe enviar al menos un campo válido para actualizar'),
   body('username').optional().trim().isLength({ min: 3, max: 20 }).withMessage('Debe tener entre 3 y 20 caracteres')
     .matches(/^[a-zA-Z0-9]+$/).withMessage('Solo se permiten letras y números')
@@ -128,12 +157,17 @@ export const validateUserUpdate = [
   body('last_name').optional().trim().isLength({ min: 2, max: 50 }).withMessage('Debe tener entre 2 y 50 caracteres')
     .matches(/^[\p{L}\s'-]+$/u).withMessage('Solo se permiten letras'),
   body('biography').optional({ values: 'null' }).isLength({ max: 500 }).withMessage('Máximo 500 caracteres'),
-  body('avatar_url').optional({ values: 'null' }).isURL().withMessage('Debe ser una URL válida'),
+  body('avatar_url').optional({ values: 'null' })
+    .isLength({ max: 255 }).withMessage('Máximo 255 caracteres')
+    .bail().isURL({ protocols: ['http', 'https'], require_protocol: true })
+    .withMessage('Debe ser una URL HTTP o HTTPS válida'),
   body('birth_date').optional({ values: 'null' }).isISO8601().withMessage('Debe ser una fecha válida'),
   rejectInvalid,
 ];
 
 export const validateTag = [
+  body().custom((value) => hasOnlyFields(value, ['name'], 1, 1))
+    .withMessage('Solo se permite el nombre de la etiqueta'),
   body('name').trim().isLength({ min: 2, max: 30 }).withMessage('Debe tener entre 2 y 30 caracteres')
     .matches(/^\S+$/).withMessage('No se permiten espacios')
     .bail().custom(async (name) => {
@@ -143,7 +177,7 @@ export const validateTag = [
 ];
 
 export const validateTagUpdate = [
-  body().custom((value) => Object.keys(value).length === 1 && Object.hasOwn(value, 'name'))
+  body().custom((value) => hasOnlyFields(value, ['name'], 1, 1))
     .withMessage('Solo se puede actualizar el nombre de la etiqueta'),
   body('name').trim().isLength({ min: 2, max: 30 }).withMessage('Debe tener entre 2 y 30 caracteres')
     .matches(/^\S+$/).withMessage('No se permiten espacios')
@@ -155,9 +189,9 @@ export const validateTagUpdate = [
 ];
 
 export const validateArticle = [
-  body().custom((value) => Object.keys(value).every((field) => [
+  body().custom((value) => hasOnlyFields(value, [
     'title', 'content', 'excerpt', 'status', 'user_id',
-  ].includes(field))).withMessage('El artículo contiene campos no permitidos'),
+  ])).withMessage('El artículo contiene campos no permitidos'),
   body('title').trim().isLength({ min: 3, max: 200 }).withMessage('Debe tener entre 3 y 200 caracteres'),
   body('content').isString().trim().isLength({ min: 50 }).withMessage('Debe tener al menos 50 caracteres'),
   body('excerpt').optional({ values: 'null' }).isLength({ max: 500 }).withMessage('Máximo 500 caracteres'),
@@ -168,9 +202,9 @@ export const validateArticle = [
 ];
 
 export const validateArticleUpdate = [
-  body().custom((value) => Object.keys(value).length > 0 && Object.keys(value).every((field) => [
+  body().custom((value) => hasOnlyFields(value, [
     'title', 'content', 'excerpt', 'status',
-  ].includes(field))).withMessage('Debe enviar campos válidos para el artículo'),
+  ], 1)).withMessage('Debe enviar campos válidos para el artículo'),
   body('title').optional().trim().isLength({ min: 3, max: 200 }).withMessage('Debe tener entre 3 y 200 caracteres'),
   body('content').optional().isString().trim().isLength({ min: 50 }).withMessage('Debe tener al menos 50 caracteres'),
   body('excerpt').optional({ values: 'null' }).isLength({ max: 500 }).withMessage('Máximo 500 caracteres'),
@@ -180,6 +214,8 @@ export const validateArticleUpdate = [
 ];
 
 export const validateArticleTag = [
+  body().custom((value) => hasOnlyFields(value, ['article_id', 'tag_id'], 2, 2))
+    .withMessage('Debe enviar únicamente article_id y tag_id'),
   body('article_id').isInt({ min: 1 }).withMessage('Debe ser un ID entero positivo').toInt().bail().custom(ensureArticleExists),
   body('tag_id').isInt({ min: 1 }).withMessage('Debe ser un ID entero positivo').toInt().bail().custom(ensureTagExists),
   rejectInvalid,
