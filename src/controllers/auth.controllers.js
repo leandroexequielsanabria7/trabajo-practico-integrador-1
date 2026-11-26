@@ -6,12 +6,11 @@ import { hashPassword, comparePassword } from "../helpers/bcrypt.helper.js";
 import { generateToken } from "../helpers/jwt.helper.js";
 
 const cookieOptions = {
-  httpOnly: true, // JS del navegador no puede leerla (XSS)
-  secure: process.env.NODE_ENV === "production", // solo HTTPS en producción
-  sameSite: "strict", // no se envía desde otros sitios (CSRF)
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production", 
+  sameSite: "strict", 
 };
 
-// POST /api/auth/register → público
 export const register = async (req, res) => {
   try {
     const { username, email, password, first_name, last_name, biography, avatar_url, birth_date } =
@@ -19,7 +18,6 @@ export const register = async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
-    // Transacción: se crean User y Profile juntos, o ninguno
     const user = await sequelize.transaction(async (t) => {
       const newUser = await UserModel.create(
         { username, email, password: hashedPassword },
@@ -41,7 +39,6 @@ export const register = async (req, res) => {
   }
 };
 
-// POST /api/auth/login → público
 export const login = async (req, res) => {
   try {
     const { username, password } = matchedData(req);
@@ -69,7 +66,6 @@ export const login = async (req, res) => {
   }
 };
 
-// GET /api/auth/profile → autenticado
 export const getProfile = async (req, res) => {
   try {
     const user = await UserModel.findByPk(req.user.id, {
@@ -87,7 +83,6 @@ export const getProfile = async (req, res) => {
   }
 };
 
-// PUT /api/auth/profile → autenticado
 export const updateProfile = async (req, res) => {
   try {
     const data = matchedData(req, { locations: ["body"] });
@@ -105,7 +100,6 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// POST /api/auth/logout → autenticado
 export const logout = (req, res) => {
   try {
     res.clearCookie("token", cookieOptions);
